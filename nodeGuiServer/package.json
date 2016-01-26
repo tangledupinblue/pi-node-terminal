@@ -1,0 +1,9 @@
+{
+  "name": "node_gui_server",
+  "version": "0.0.1",
+  "description": "node gui server",
+  "dependencies": {
+    "ms": "^0.7.1",
+    "socket.io-client": "^1.4.4"
+  }
+}
