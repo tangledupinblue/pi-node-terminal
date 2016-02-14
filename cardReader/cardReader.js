@@ -1,6 +1,8 @@
 var http=require('http');
 var request = require('request');
-
+var schedule = require('node-schedule');
+ 
+ 
 /////Config Settings
 var tillServerUrl = 'http://devserver2012.scantracksa.com:8088/';
 var guiServerUrl = 'http://localhost:3000';
@@ -11,6 +13,11 @@ var tillId='e1213a3e-1599-43ae-b71b-5c95bae16548';
 //////End Config Settings
 
 
+//globals
+var CONNECTION_ERROR = 'Connection Issue';
+
+
+	
 //client websocket
 var socket = require('socket.io-client')(guiServerUrl);
 socket.on('connect', function(){
@@ -30,9 +37,11 @@ socket.connect();
 //comms classes
 function MethodInvocation() {
 	var self=this;
-	self.MemberName =callName;
-	self.ServiceType=serviceType;
-	self.ParameterValues =[];
+	self.MemberName = callName;
+	self.ServiceType = serviceType;
+	self.DateSubmitted = new Date();
+	self.DateReceived = new Date();
+	self.ParameterValues = [];
 }
 function ScanResult(){
 	var self=this;
@@ -44,6 +53,7 @@ function ScanResult(){
 function ScanDetails(){
 	var self = this;	
 	self.Call = '';
+	self.TimeStamp = new Date();
 }
 
 //the card reader class
@@ -60,31 +70,58 @@ function CardReader(){
 			if(error) {
 				var errorResult = new ScanResult();
 				errorResult.ErrorMessage = error.message; 
-				errorResult.ErrorClass = 'Connection Issue';
-				self.ShowResult(errorResult);
+				errorResult.ErrorClass = CONNECTION_ERROR;
+				self.ShowResult(data, errorResult);
 			} else {
-				self.ShowResult(JSON.parse(body));
+				self.ShowResult(data, JSON.parse(body));
 			}
 		});
 	};
 	self.CardScanned = function(scanDetails){			
 		console.log('Card Scanned',scanDetails);
-		self.dopost(tillServerUrl,scanDetails);
+		scanDetails.Call.DateSubmitted = new Date();
+		self.dopost(tillServerUrl, scanDetails);
 	};
-	self.ShowResult = function(scanResult){
+	self.ShowResult = function(requestDetails, scanResult){
 		console.log('ScanResult: ' + JSON.stringify(scanResult));
-		socket.emit('displayMessage', scanResult);
+		if (scanResult.ErrorClass == CONNECTION_ERROR) {
+			if (requestDetails.Call.MemberName != cachedCallName) {
+				offlineCache.push(requestDetails);
+				socket.emit('displayMessage', scanResult);
+			}						
+		} else {
+			if (requestDetails.Call.MemberName != cachedCallName) {				
+				socket.emit('displayMessage', scanResult);
+			} else {
+				offlineCache.splice(offlineCache.indexOf(requestDetails));				
+			}						
+		}
 	};
 }
 console.log('Running...');
 
 var cardReader = new CardReader();
 
+// offline caching....
+if (cachedCallName) {
+	var offlineCache = [];
+	var j = schedule.scheduleJob('* * * * *', function(){
+  		console.log('Cache bitches: ' + offlineCache.length);
+		for (var i = 0; i < offlineCache.length; i++) {
+			var data = offlineCache[i];
+			console.log("Cached Call: " + data.Call.MemberName);			
+			data.Call.MemberName = cachedCallName;	
+			debugger;
+			cardReader.CardScanned(data);
+		}		  
+	});
+}
+
 socket.on('cardScanned', function(cardId){
 	console.log("cardScanned: " + cardId);
 	var methodInvocation = new MethodInvocation();
 	methodInvocation.ParameterValues=[tillId,cardId];
-	var data={Call:JSON.stringify(methodInvocation)};
+	var data={ 'Call':methodInvocation};
 	cardReader.CardScanned(data);
 });
 
