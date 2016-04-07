@@ -13,6 +13,7 @@ function FireGPIO() {
 	};	
 };
 
-var fireIO = new FireGPIO();
-fireIO.fire();
+module.exports = new FireGPIO();
+
+
 

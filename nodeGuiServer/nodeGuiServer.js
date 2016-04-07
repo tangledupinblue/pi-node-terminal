@@ -16,7 +16,7 @@ io.on('connection', function(socket){
     io.emit('displayMessage', JSON.stringify(msg));
   });
   socket.on('cardScanned', function(msg){
-    io.emit('cardScanned', JSON.stringify(msg));
+    io.emit('cardScanned', msg); //JSON.stringify(msg));
     console.log('card Scan Sent: ' + msg);
   });
   socket.on('disconnect', function() {

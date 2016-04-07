@@ -62,7 +62,7 @@ function FireGPIO() {
 		setTimeout(function() {
 			console.log("Set Relay Off!");
 			exec('sh gpio_stop.sh');
-		}, 3000 );
+		}, 1000 );
 	};	
 };
  
