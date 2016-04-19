@@ -15,7 +15,27 @@ var cachedCallName = 'CardScannedDelayed';
 var serviceType = 'MealController';
 var tillId = '5f652104-485b-4f98-a712-370d7f579e68';    //'565924f5-bef0-4fdb-923d-ba480b2b5716'; //'5f652104-485b-4f98-a712-370d7f579e68'; ///'e1213a3e-1599-43ae-b71b-5c95bae16548';
 var postTimeout = 3000;
+var offlineMessage = "Access Granted (offline)";
+var successMessage = "Access Granted";
+//write the files to a location and watch for scans
+var scanWriteLocation = "/home/barrys/temp";
 //////End Config Settings
+
+var overrideSettings = __dirname + '/../../cardReaderOverride.js';
+if (fs.existsSync(overrideSettings)) {
+	var overrides = require('../../cardReaderOverride.js').overrides;
+	console.log(overrides);
+	if (overrides) {
+		if ("tillServerUrl" in overrides ) { tillServerUrl = overrides["tillServerUrl"]};
+		if ("tillId" in overrides) { tillId = overrides["tillId"]};
+		if ("offlineMessage" in overrides ) { offlineMessage = overrides["offlineMessage"]};
+		if ("successMessage" in overrides ) { successMessage = overrides["successMessage"]};		
+		if ("scanWriteLocation" in overrides ) { scanWriteLocation = overrides["scanWriteLocation"]};		
+	}
+}
+
+console.log(tillServerUrl);
+console.log(tillId);
 
 var offlineCache = [];
 
@@ -31,7 +51,7 @@ db_cache.loadDatabase(function(err) {
 //client websocket
 var socket = require('socket.io-client')(guiServerUrl);
 socket.on('connect', function(){
-	console.log("connected bitches!!!!");
+	console.log("connected!!!!");
 	socket.emit('displayMessage', "Reader Starting....");
 });
 socket.on('disconnect', function(){
@@ -69,6 +89,7 @@ function CardReader(serverPoster){
 				fireIO.fire();
 			}
 		} else {
+			
 			socket.emit('displayMessage', scanResult);
 			if (scanResult.Success) {
 			}
@@ -101,28 +122,40 @@ if (cachedCallName) {
 	var j = schedule.scheduleJob('* * * * *', function(){
   		console.log('Cache bitches: ' + offlineCache.length);
 		for (var i = 0; i < offlineCache.length; i++) {
-			var data = offlineCache[i];
-			//console.log("Cached Call: " + JSON.stringify(data.Call));			
-			var methodInvocation = JSON.parse(data.Call);
-			methodInvocation.MemberName = cachedCallName;
-			var now = +new Date();
-			var timeStamp = methodInvocation.TimeStamp;
-			console.log(now);
-			console.log(methodInvocation.TimeStamp);
-			console.log(timeStamp);
-			var diffMins = Math.round((now - timeStamp)/60000); // minutes	
-			console.log(diffMins);
-			if (methodInvocation.ParameterValues.length > 2) {
-				methodInvocation.ParameterValues[2] = diffMins;	
-			} else {
-				methodInvocation.ParameterValues.push(diffMins);					
-			}
-			data = { 'Call': JSON.stringify(methodInvocation)};
-			//console.log("Cached Call: " + JSON.stringify(data.Call));			
-			cardReader.CardResubmitted(data);
+			setTimeout ( function() {
+				var data = offlineCache[i];
+				var methodInvocation = JSON.parse(data.Call);
+				methodInvocation.MemberName = cachedCallName;
+				var now = +new Date();
+				var timeStamp = methodInvocation.TimeStamp;
+				var diffMins = Math.round((now - timeStamp)/60000); // minutes	
+				// console.log(diffMins);
+				if (methodInvocation.ParameterValues.length > 2) {
+					methodInvocation.ParameterValues[2] = diffMins;	
+				} else {
+					methodInvocation.ParameterValues.push(diffMins);					
+				}
+				data = { 'Call': JSON.stringify(methodInvocation)};
+				cardReader.CardResubmitted(data);
+			}, 1000);
 		}		  
 	});
 }
+
+var watch = require('node-watch')
+if (scanWriteLocation) {
+	watch(scanWriteLocation, function(filename) {
+		var scannedString = path.basename(filename);
+		if (fs.existsSync(filename)) {
+			setTimeout(function() {
+				fs.unlink(filename);
+			}, 200);
+			console.log('read from file: ' + scannedString);
+			socket.emit('cardScanned', scannedString);
+		}
+	});
+};
+
 
 socket.on('cardScanned', function(cardId){
 	console.log("cardScanned: " + cardId);
@@ -131,8 +164,7 @@ socket.on('cardScanned', function(cardId){
 	//must send in this format
 	var data={ 'Call': JSON.stringify(methodInvocation)};
 	cardReader.CardScanned(data);
-})
-;
+});
 
 
 
