@@ -123,8 +123,8 @@ if (cachedCallName) {
   		console.log('Cache bitches: ' + offlineCache.length);
 		for (var i = 0; i < offlineCache.length; i++) {
 			setTimeout ( function() {
-				var data = offlineCache[i];
-				var methodInvocation = JSON.parse(data.Call);
+				var next = offlineCache[i];
+				var methodInvocation = JSON.parse(next.Call);
 				methodInvocation.MemberName = cachedCallName;
 				var now = +new Date();
 				var timeStamp = methodInvocation.TimeStamp;
@@ -135,8 +135,8 @@ if (cachedCallName) {
 				} else {
 					methodInvocation.ParameterValues.push(diffMins);					
 				}
-				data = { 'Call': JSON.stringify(methodInvocation)};
-				cardReader.CardResubmitted(data);
+				next = { 'Call': JSON.stringify(methodInvocation)};
+				cardReader.CardResubmitted(next);
 			}, 1000);
 		}		  
 	});
