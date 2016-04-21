@@ -18,7 +18,7 @@ var postTimeout = 3000;
 var offlineMessage = "Access Granted (offline)";
 var successMessage = "Access Granted";
 //write the files to a location and watch for scans
-var scanWriteLocation = "/home/barrys/temp";
+var scanWriteLocation = "/home/barrys/temp/scans";
 //////End Config Settings
 
 var overrideSettings = __dirname + '/../../cardReaderOverride.js';
@@ -34,8 +34,8 @@ if (fs.existsSync(overrideSettings)) {
 	}
 }
 
-console.log(tillServerUrl);
-console.log(tillId);
+console.log("Url: " + tillServerUrl);
+console.log("Till ID: " + tillId);
 
 var offlineCache = [];
 
@@ -86,28 +86,29 @@ function CardReader(serverPoster){
 			socket.emit('displayMessage', scanResult);
 			if (cachedCallName) {
 				offlineCache.push(scanDetails);
+				db_cache.insert(scanDetails);
 				fireIO.fire();
 			}
-		} else {
-			
+		} else {			
 			socket.emit('displayMessage', scanResult);
 			if (scanResult.Success) {
-			}
 				fireIO.fire();
+			}
 		}
 	};
-//	self.doCachedPost = function(url, data, callback) {
-//		serverPoster.doCachedPost(url, data, callback);
-//	}
 	self.CardResubmitted = function(scanDetails) {
 		console.log('Card Resubmitted',scanDetails);
 		//self.doPost(tillServerUrl, scanDetails, self.UpdateCache);		
 		self.serverPoster.doPost(tillServerUrl, scanDetails, self.UpdateCache);  			
 	};
 	self.UpdateCache = function(scanDetails, scanResult) {
+		console.log("Cached Response from Server: ", scanResult);
 		if (scanResult.ErrorClass != comms.CONNECTION_ERROR) {
 			socket.emit('displayMessage', scanResult);
 			offlineCache.splice(offlineCache.indexOf(scanDetails));
+			console.log("Removed from Cache: ", scanDetails); 
+			db_cache.remove({ _id: scanDetails._id }, function(err, numRemoved) {
+			});
 		}		
 	};
 }
@@ -120,25 +121,44 @@ console.log(cardReader);
 // offline caching....
 if (cachedCallName) {
 	var j = schedule.scheduleJob('* * * * *', function(){
-  		console.log('Cache bitches: ' + offlineCache.length);
-		for (var i = 0; i < offlineCache.length; i++) {
-			setTimeout ( function() {
-				var next = offlineCache[i];
-				var methodInvocation = JSON.parse(next.Call);
-				methodInvocation.MemberName = cachedCallName;
-				var now = +new Date();
-				var timeStamp = methodInvocation.TimeStamp;
-				var diffMins = Math.round((now - timeStamp)/60000); // minutes	
-				// console.log(diffMins);
-				if (methodInvocation.ParameterValues.length > 2) {
-					methodInvocation.ParameterValues[2] = diffMins;	
-				} else {
-					methodInvocation.ParameterValues.push(diffMins);					
+		function sendMessage(next) {
+			var methodInvocation = JSON.parse(next.Call);
+			methodInvocation.MemberName = cachedCallName;
+			var now = +new Date();
+			var timeStamp = methodInvocation.TimeStamp;
+			var diffMins = Math.round((now - timeStamp)/60000); // minutes	
+			// console.log(diffMins);
+			if (methodInvocation.ParameterValues.length > 2) {
+				methodInvocation.ParameterValues[2] = diffMins;	
+			} else {
+				methodInvocation.ParameterValues.push(diffMins);					
+			}
+			var scanDetails = { 'Call': JSON.stringify(methodInvocation)};
+			scanDetails._id = next._id;
+			cardReader.CardResubmitted(scanDetails);
+		};
+
+		db_cache.find({}, function(err, docs) {
+  			//offlineCache = docs;
+			console.log('Cache Size: ' + docs.length);
+			//fucking complicated, but need to do it recursively like this
+			//so that the set timouts actually mean something; otherwise
+			//it will loop and all the set timeout call backs will fire at the same time
+			var i = 0;			
+			function count(i) { 
+				if (i < docs.length) {			
+					var next = docs[i];
+					setTimeout(function () {
+						console.log("Sending Cache - " + i);	
+						sendMessage(next);				
+						i++;
+						count(i);
+					}, 1000);
 				}
-				next = { 'Call': JSON.stringify(methodInvocation)};
-				cardReader.CardResubmitted(next);
-			}, 1000);
-		}		  
+			};			
+			count(i);					
+		});
+//		}		  
 	});
 }
 
@@ -155,7 +175,6 @@ if (scanWriteLocation) {
 		}
 	});
 };
-
 
 socket.on('cardScanned', function(cardId){
 	console.log("cardScanned: " + cardId);
