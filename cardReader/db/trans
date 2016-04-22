@@ -1,10 +1,2 @@
-{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"5f652104-485b-4f98-a712-370d7f579e68\",\"1\"],\"TimeStamp\":1461166058421}","_id":"3BfKcrExMxMlwJg4"}
-{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"5f652104-485b-4f98-a712-370d7f579e68\",\"3\"],\"TimeStamp\":1461166061829}","_id":"3iQpgFOLt91xAD65"}
-{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"5f652104-485b-4f98-a712-370d7f579e68\",\"4\"],\"TimeStamp\":1461166063940}","_id":"Z6aUTg48gTU3cZMb"}
-{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"5f652104-485b-4f98-a712-370d7f579e68\",\"5\"],\"TimeStamp\":1461166066258}","_id":"a69RwZxkG3pWoCAx"}
-{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"5f652104-485b-4f98-a712-370d7f579e68\",\"2\"],\"TimeStamp\":1461166060151}","_id":"v23xQUFfWCFMyYN9"}
-{"$$deleted":true,"_id":"3BfKcrExMxMlwJg4"}
-{"$$deleted":true,"_id":"3iQpgFOLt91xAD65"}
-{"$$deleted":true,"_id":"Z6aUTg48gTU3cZMb"}
-{"$$deleted":true,"_id":"a69RwZxkG3pWoCAx"}
-{"$$deleted":true,"_id":"v23xQUFfWCFMyYN9"}
+{"Call":"{\"MemberName\":\"CardScanned\",\"ServiceType\":\"MealController\",\"ParameterValues\":[\"fa355fc8-e482-45e0-892b-7502979475d8\",\"5\"],\"TimeStamp\":1461331767410}","_id":"8dUngtp15dAChWCP"}
+{"$$deleted":true,"_id":"8dUngtp15dAChWCP"}

@@ -17,6 +17,7 @@ module.exports.ScanResult = function ScanResult(){
 	self.Message='';
 	self.ErrorMessage='';
 	self.ErrorClass='';
+	self.DisplayMessage='';
 }
 
 /*

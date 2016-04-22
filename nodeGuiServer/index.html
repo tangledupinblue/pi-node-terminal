@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>MOCCA Meal Controller</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 40px Helvetica, Arial; text-align: center}
@@ -24,19 +24,22 @@
 
   socket.on('displayMessage', function(msg){
       msg = JSON.parse(msg);
-      console.log(typeof(msg.Success));
+      console.log(msg);
       var newLine = null;
       if (typeof(msg.Success) == 'undefined') {
           newLine = $('<li>').text(msg);
       } else if (!msg.Success) {
           console.log(msg.ErrorClass);
           if (msg.ErrorClass == 'Connection Issue') {
-              newLine = $('<li class="networkErrorMessage">').text(msg.ErrorMessage);                    
+            
+            ///CHANGE TO DISPLAY MESSAGE
+            
+              newLine = $('<li class="networkErrorMessage">').text(msg.DisplayMessage);                    
           } else {
-              newLine = $('<li class="errorMessage">').text(msg.ErrorMessage);        
+              newLine = $('<li class="errorMessage">').text(msg.DisplayMessage);        
           }
       } else {
-          newLine = $('<li class="successMessage">').text('Successful Transaction');                
+          newLine = $('<li class="successMessage">').text(msg.DisplayMessage);                
       }
       $('#messages').append(newLine);
       newLine.fadeOut(3000);

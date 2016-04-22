@@ -8,7 +8,7 @@ var fs = require('fs');
 var Datastore = require('nedb');
 
 /////Config Settings
-var tillServerUrl = 'http://192.168.0.17:8088/';
+var tillServerUrl = 'http://192.168.0.6:8088/';
 var guiServerUrl = 'http://localhost:3000';
 var callName = 'CardScanned';
 var cachedCallName = 'CardScannedDelayed';
@@ -36,6 +36,7 @@ if (fs.existsSync(overrideSettings)) {
 
 console.log("Url: " + tillServerUrl);
 console.log("Till ID: " + tillId);
+console.log("Reading From: " + scanWriteLocation);
 
 var offlineCache = [];
 
@@ -83,6 +84,7 @@ function CardReader(serverPoster){
 		console.log('ScanResult: ' + JSON.stringify(scanResult));
 		console.log('Request Details: ' + JSON.stringify(scanDetails));
 		if (scanResult.ErrorClass == comms.CONNECTION_ERROR) {
+			scanResult.DisplayMessage = offlineMessage;
 			socket.emit('displayMessage', scanResult);
 			if (cachedCallName) {
 				offlineCache.push(scanDetails);
@@ -90,10 +92,13 @@ function CardReader(serverPoster){
 				fireIO.fire();
 			}
 		} else {			
-			socket.emit('displayMessage', scanResult);
 			if (scanResult.Success) {
+				scanResult.DisplayMessage = successMessage;
 				fireIO.fire();
+			} else {
+				scanResult.DisplayMessage = scanResult.ErrorMessage;	
 			}
+			socket.emit('displayMessage', scanResult);
 		}
 	};
 	self.CardResubmitted = function(scanDetails) {
@@ -104,6 +109,7 @@ function CardReader(serverPoster){
 	self.UpdateCache = function(scanDetails, scanResult) {
 		console.log("Cached Response from Server: ", scanResult);
 		if (scanResult.ErrorClass != comms.CONNECTION_ERROR) {
+			scanResult.DisplayMessage = "Processing: " + scanResult.Message + scanResult.ErrorMessage;
 			socket.emit('displayMessage', scanResult);
 			offlineCache.splice(offlineCache.indexOf(scanDetails));
 			console.log("Removed from Cache: ", scanDetails); 
@@ -153,7 +159,7 @@ if (cachedCallName) {
 						sendMessage(next);				
 						i++;
 						count(i);
-					}, 1000);
+					}, 500);
 				}
 			};			
 			count(i);					
